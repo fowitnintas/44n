@@ -98,6 +98,37 @@ public class Ai {
 					}
 				}
 			}
+			if(towernow[0] == isFirst &&
+				towernow[1] == isFirst &&
+				towernow[2] == isFirst &&
+				towernow[3] == isFirst &&
+				towernow[4] == isFirst ){ //全部取ってたら止まったので応急処置した
+				
+				if (!(map[0][2] == 0)) {
+					towerid[0] = 1;
+					towerid[1] = cnt; 
+					break;
+				}else if(!(map[0][6] == 0)){
+					towerid[0] = 3;
+					towerid[1] = cnt; 
+					break;
+				}else if(!(map[4][4] == 0)){
+					towerid[0] = 5;
+					towerid[1] = cnt; 
+					break;
+				}else if(!(map[8][2] == 0)){
+					towerid[0] = 2;
+					towerid[1] = cnt; 
+					break;
+				}else if(!(map[8][6] == 0)){
+					towerid[0] = 4;
+					towerid[1] = cnt; 
+					break;  //塔来たらbreak吐く		
+				}
+				
+			}
+					
+					
 //			if(removeMytower){ //相手or空白塔の中での最寄りを探す
 				if (!(map[0][2] == 0) && !(towernow[0]==isFirst)) {
 					towerid[0] = 1;
@@ -220,10 +251,120 @@ public class Ai {
 		
 		
 ///////////////////////ai
+		boolean enemyintower = false;
+		int[] enemyIdTargetTower = {-1,-1,-1,-1}; 
 		
-		if(onlydist) { //同距離一つだけなら確定できる
+		if(onlydist) { //同距離一つだけ
+			for (int n=0;n<4;n++){ //敵陣の時は敵がいるかどうか見る
+				enemyintower = false;
+				enemyIdTargetTower[n] = 0;
+				pos = ParseData.GetEnemyUnitPos(n);	
+					switch(nearestUnit[1]){
+					case 1:
+						if(pos[0]==0 && pos[1]==2) 
+							enemyintower = true;
+						break;
+					case 2:
+						if(pos[0]==8 && pos[1]==2) 
+							enemyintower = true;
+						break;
+					case 3:
+						if(pos[0]==0 && pos[1]==6) 
+							enemyintower = true;
+						break;
+					case 4:
+						if(pos[0]==8 && pos[1]==6) 
+							enemyintower = true;
+						break;
+					case 5:
+						if(pos[0]==4 && pos[1]==4) 
+							enemyintower = true;
+						break;
+					}
+				if(enemyintower){
+					enemyIdTargetTower[n] = 1;
+				}
+			}
+			int cnt = 0;
+			int enemyId = -1;
+			for(int n=0;n<4;n++) {
+				if(enemyIdTargetTower[n]==1) {
+					cnt++;
+					enemyId = n;
+				}
+			}
+			if(cnt>=2){ //対象に二人もいるなら破棄する
+				System.out.println("Target:more 2 enemy");
+/*
+				int mindist=10;
+				int saveloseunit = nearestUnit[0];
+				
+				for(int n=0;n<4;n++){
+					if( !(n == saveloseunit) ){							
+						if((mindist > nearTower[n][1]) && !(intower[n]==1)){
+							mindist = nearTower[n][1];
+							nearestUnit[0] = n;
+							nearestUnit[1] = nearTower[n][0];
+							nearestUnit[2] = nearTower[n][1];						
+						}
+					}
+			
+				}
+*/
+				switch(nearestUnit[1]){
+					case 1:
+					case 2:
+					case 3:
+					case 4:
+						nearestUnit[1] = 5;
+						break;
+					case 5:
+						pos = ParseData.GetMyUnitPos(nearestUnit[0]);
+						if(pos[0] < 4){
+							if(pos[1] < 4) nearestUnit[1] = 1;
+							else nearestUnit[1] = 3;
+						}
+						else {
+							if(pos[1] < 4) nearestUnit[1] = 2;
+							else nearestUnit[1] = 4;
+						}
+						
+						
+				}
+								
+				
+			}else if(cnt==0){ //一人以下なら
+				System.out.println("Target:0 enemy");
+			}else {//1
+				System.out.println("Target:1 enemy");
+				if(!(IsWinnable(nearestUnit[0],enemyId) == -1 )){ //負けない相手なら採用
+					System.out.println("-win or draw");
+				}else{
+					System.out.println("-lose");
+/*					
+					int mindist=10;
+					int saveloseunit = nearestUnit[0];					
+					for(int n=0;n<4;n++){
+						if( !(n == saveloseunit) ){							
+							if((mindist > nearTower[n][1]) && !(intower[n]==1)){
+								mindist = nearTower[n][1];
+								nearestUnit[0] = n;
+								nearestUnit[1] = nearTower[n][0];
+								nearestUnit[2] = nearTower[n][1];						
+							}
+						}				
+					}
+*/					
+					nearestUnit[0] = enemyId - 1;
+					if (nearestUnit[0] == -1) nearestUnit[0] = 3;
+					nearestUnit[1] = nearTower[nearestUnit[0]][0];
+					
+					
+				}
+			}
 			
 		} else { //二つ以上あるなら動かす駒を考える
+			System.out.println("Unit selecting");
 			for(int i=0;i<4;i++){
 				if(equalDistUnit[i][0] ==1){ //競合している相手と比較して
 					if(intower[i] < intower[ nearestUnit[0] ]){ //強豪相手の方が優先度で勝るなら採用
@@ -234,6 +375,58 @@ public class Ai {
 					}
 					else if(intower[i] < intower[ nearestUnit[0] ]){ //同じ優先度なら
 						//同じ優先度での駒処理
+						if (towernow[nearestUnit[1]] == -1 ) { //nearestUnitの狙い塔が白なら優先
+						} else {
+							for (int n=0;n<4;n++){ //敵陣の時は敵がいるかどうか見る
+								enemyintower = false;
+								enemyIdTargetTower[n] = 0;
+								pos = ParseData.GetEnemyUnitPos(n);	
+									switch(equalDistUnit[i][1]){
+									case 1:
+										if(pos[0]==0 && pos[1]==2) 
+											enemyintower = true;
+										break;
+									case 2:
+										if(pos[0]==8 && pos[1]==2) 
+											enemyintower = true;
+										break;
+									case 3:
+										if(pos[0]==0 && pos[1]==6) 
+											enemyintower = true;
+										break;
+									case 4:
+										if(pos[0]==8 && pos[1]==6) 
+											enemyintower = true;
+										break;
+									case 5:
+										if(pos[0]==4 && pos[1]==4) 
+											enemyintower = true;
+										break;
+									}
+								if(enemyintower){
+									enemyIdTargetTower[n] = 1;
+								}
+							}
+							int cnt = 0;
+							int enemyId = -1;
+							for(int n=0;n<4;n++) {
+								if(enemyIdTargetTower[n]==1) {
+									cnt++;
+									enemyId = n;
+								}
+							}
+							if(cnt>=2){ //対象に二人もいるなら破棄する
+							}else{ //一人以下なら
+								if(!(IsWinnable(i,enemyId) == -1 )){ //負けない相手なら採用
+									nearestUnit[0] = i;
+									nearestUnit[1] = equalDistUnit[i][1];
+									nearestUnit[2] = equalDistUnit[i][2]; 						
+								}else{
+									
+								}
+							}
+							
+						}
 					}
 				}
 			}
